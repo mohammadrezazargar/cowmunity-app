@@ -1,9 +1,10 @@
-from Cowmunity import Sets, Parameters, Variables, Equations, FixSBMLs, solve, extract_results, print_results, save_results, bug_huntin
+from Cowmunity import Sets, Parameters, Variables, Equations, FixSBMLs, solve, extract_results, print_results, save_results, bug_huntin, set_species_counts
 
 # variable_choice can be set to 'biomass_outer' or 'ATP_outer'
 
 
 variable_choice = 'biomass_outer'  # Default objective variable
+species_counts = {"mgk": 4, "prm": 6, "rfl": 3}  # Example: {"mgk": 4, "prm": 3, "rfl": 2}
 
 file = open('cow.txt', 'r')
 cow = file.read()
@@ -52,6 +53,7 @@ else:
 
 print(f"Building the Cowmunity model with {treatment} treatment...")
 
+set_species_counts(**species_counts)
 FixSBMLs()
 Sets()
 Parameters()
