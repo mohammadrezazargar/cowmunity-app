@@ -1077,7 +1077,7 @@ def solve(solver_name='IPOPT'):
                     problem="NLP", sense=Sense.MAX, objective=objective_variable)
     
     # Set solver options
-    options = Options(nlp=solver_name, equation_listing_limit=10, variable_listing_limit=10, time_limit=20, threads=0)
+    options = Options(nlp=solver_name, equation_listing_limit=10, variable_listing_limit=10, time_limit=300)
 
     # Solve the model
     print(f"Solving with {solver_name}...")
