@@ -73,6 +73,42 @@ TREATMENT_OPTIONS = {
 st.title("Cowmunity Model")
 st.write("Configure species counts and treatment, then run the model.")
 
+with st.expander("Diagnostics: test GAMSPy with a minimal unrelated model"):
+    if st.button("Run minimal GAMSPy test"):
+        try:
+            import gamspy as gp
+
+            m = gp.Container()
+            i = gp.Set(m, "i", records=["seattle", "san-diego"])
+            j = gp.Set(m, "j", records=["new-york", "chicago", "topeka"])
+            a = gp.Parameter(m, "a", domain=i, records=[("seattle", 350), ("san-diego", 600)])
+            b = gp.Parameter(m, "b", domain=j, records=[("new-york", 325), ("chicago", 300), ("topeka", 275)])
+            d = gp.Parameter(
+                m, "d", domain=[i, j],
+                records=[
+                    ("seattle", "new-york", 2.5), ("seattle", "chicago", 1.7), ("seattle", "topeka", 1.8),
+                    ("san-diego", "new-york", 2.5), ("san-diego", "chicago", 1.8), ("san-diego", "topeka", 1.4),
+                ],
+            )
+            f = gp.Parameter(m, "f", records=90)
+            c = gp.Parameter(m, "c", domain=[i, j])
+            c[i, j] = f * d[i, j] / 1000
+            x = gp.Variable(m, "x", domain=[i, j], type="Positive")
+            supply = gp.Equation(m, "supply", domain=i)
+            supply[i] = gp.Sum(j, x[i, j]) <= a[i]
+            demand = gp.Equation(m, "demand", domain=j)
+            demand[j] = gp.Sum(i, x[i, j]) >= b[j]
+            cost = gp.Sum((i, j), c[i, j] * x[i, j])
+            transport = gp.Model(
+                m, name="transport", equations=m.getEquations(),
+                problem="LP", sense=gp.Sense.MIN, objective=cost,
+            )
+            transport.solve()
+            st.success(f"Minimal GAMSPy test SOLVED. Objective value: {cost.toValue()}")
+        except Exception as e:
+            st.error(f"Minimal GAMSPy test FAILED: {e}")
+            print(f"MINIMAL GAMSPY TEST FAILED: {e}")
+
 col1, col2, col3 = st.columns(3)
 with col1:
     mgk_count = st.number_input("MGK count", min_value=1, value=1, step=1)
