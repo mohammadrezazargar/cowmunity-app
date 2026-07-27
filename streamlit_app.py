@@ -1,6 +1,64 @@
+import subprocess
+import sys
+
 import streamlit as st
 
-from Cowmunity import run_model
+st.set_page_config(page_title="Cowmunity Model", layout="centered")
+
+
+# --- One-time GAMSPy license setup (reads from Streamlit secrets) -----------
+# On Streamlit Community Cloud there's no interactive terminal, so the GAMSPy
+# license has to be installed programmatically on first run of each new
+# container. Add your license under Settings -> Secrets as:
+#
+#   GAMSPY_LICENSE = "your-36-character-access-code-or-6-line-license-text"
+#
+@st.cache_resource
+def _install_gamspy_license():
+    license_value = st.secrets.get("GAMSPY_LICENSE", None)
+    if not license_value:
+        return "missing", "", ""
+    result = subprocess.run(
+        [sys.executable, "-m", "gamspy", "install", "license", license_value],
+        capture_output=True,
+        text=True,
+    )
+    status = "installed" if result.returncode == 0 else f"error (code {result.returncode})"
+    return status, result.stdout, result.stderr
+
+
+license_status, license_stdout, license_stderr = _install_gamspy_license()
+
+# Always print to the server log, regardless of outcome, so it shows up in
+# "Manage app" logs on Streamlit Cloud.
+print(f"GAMSPY LICENSE INSTALL STATUS: {license_status}")
+print(f"GAMSPY LICENSE INSTALL STDOUT: {license_stdout}")
+print(f"GAMSPY LICENSE INSTALL STDERR: {license_stderr}")
+
+# Also show a quick summary of what gamspy currently thinks is installed.
+try:
+    check = subprocess.run(
+        [sys.executable, "-m", "gamspy", "show", "license"],
+        capture_output=True,
+        text=True,
+    )
+    print(f"GAMSPY SHOW LICENSE STDOUT: {check.stdout}")
+    print(f"GAMSPY SHOW LICENSE STDERR: {check.stderr}")
+except Exception as e:
+    print(f"Could not run 'gamspy show license': {e}")
+
+if license_status == "missing":
+    st.warning(
+        "No GAMSPY_LICENSE found in Streamlit secrets. The app will run on the "
+        "free demo license, which caps NLP models at 2,500 variables/constraints — "
+        "too small for this model with more than one organism copy. "
+        "Add your free academic GAMSPy license in the app's Secrets settings."
+    )
+elif license_status.startswith("error"):
+    st.error(f"Could not install GAMSPy license: {license_status}. Check Manage app logs for details.")
+# ------------------------------------------------------------------------
+
+from Cowmunity import run_model  # noqa: E402  (import after license setup)
 
 
 TREATMENT_OPTIONS = {
@@ -12,7 +70,6 @@ TREATMENT_OPTIONS = {
 }
 
 
-st.set_page_config(page_title="Cowmunity Model", layout="centered")
 st.title("Cowmunity Model")
 st.write("Configure species counts and treatment, then run the model.")
 
