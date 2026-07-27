@@ -1,4 +1,4 @@
 pandas
 python-libsbml
-gamspy
+ gamspy==1.13.0
 streamlit
